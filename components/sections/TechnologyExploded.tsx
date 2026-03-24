@@ -133,15 +133,17 @@ export default function TechnologyExploded() {
     lastFrameRef.current = idx;
   }, []);
 
-  /* ── Resize canvas ────────────────────────────────────────── */
+  /* ── Resize canvas — sized to the box, not the full viewport ─ */
   const resize = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width  = window.innerWidth  * dpr;
-    canvas.height = window.innerHeight * dpr;
-    canvas.style.width  = window.innerWidth  + 'px';
-    canvas.style.height = window.innerHeight + 'px';
+    const w = Math.min(1380, window.innerWidth  * 0.94);
+    const h = Math.min(760,  window.innerHeight * 0.84);
+    canvas.width  = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width  = w + 'px';
+    canvas.style.height = h + 'px';
     setCanvasReady(true);
     drawFrame(lastFrameRef.current < 0 ? 0 : lastFrameRef.current);
   }, [drawFrame]);
@@ -157,9 +159,9 @@ export default function TechnologyExploded() {
       const rect = section.getBoundingClientRect();
       const scrollableH = section.offsetHeight - window.innerHeight;
 
-      // Active only when section top has passed viewport top AND
-      // section bottom is still below viewport top (true sticky zone)
-      const active = rect.top <= 0 && rect.bottom > window.innerHeight * 0.1;
+      // Activate slightly before hero fully exits (5 % vh early) so
+      // the box snaps in without any visible dark gap.
+      const active = rect.top <= window.innerHeight * 0.05 && rect.bottom > window.innerHeight * 0.1;
       setInView(active);
 
       if (active) {
@@ -216,23 +218,26 @@ export default function TechnologyExploded() {
         background: 'linear-gradient(180deg, #050D1A 0%, #0A2540 50%, #050D1A 100%)',
       }}
     >
-      {/* ── Fixed viewer — visible only while section is in viewport ── */}
+      {/* ── Fixed viewer — centered box, visible only inside section ── */}
       <div
         style={{
           position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '100vh',
-          zIndex: 10,
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 'min(1380px, 94vw)',
+          height: 'min(760px, 84vh)',
+          borderRadius: 20,
           overflow: 'hidden',
-          background: 'linear-gradient(180deg, #050D1A 0%, #0A2540 50%, #050D1A 100%)',
+          zIndex: 20,
+          background: 'linear-gradient(180deg, #050D1A 0%, #0A2540 55%, #050D1A 100%)',
+          border: '1px solid rgba(126,214,255,0.13)',
+          boxShadow: '0 48px 120px rgba(0,0,0,0.70), 0 0 0 1px rgba(126,214,255,0.06), inset 0 1px 0 rgba(255,255,255,0.06)',
           opacity: inView ? 1 : 0,
           visibility: inView ? 'visible' : 'hidden',
           pointerEvents: inView ? 'auto' : 'none',
-          transition: inView
-            ? 'opacity 0.3s ease'
-            : 'opacity 0.3s ease, visibility 0s linear 0.3s',
+          /* instant reveal, smooth fade-out */
+          transition: inView ? 'none' : 'opacity 0.4s ease, visibility 0s linear 0.4s',
         }}
       >
 
@@ -266,12 +271,12 @@ export default function TechnologyExploded() {
             top: 0,
             left: 0,
             right: 0,
-            paddingTop: 52,
-            paddingBottom: 28,
+            paddingTop: 36,
+            paddingBottom: 24,
             textAlign: 'center',
             pointerEvents: 'none',
-            zIndex: 10,
-            background: 'linear-gradient(to bottom, rgba(5,13,26,0.85) 0%, rgba(5,13,26,0.5) 70%, transparent 100%)',
+            zIndex: 35,
+            background: 'linear-gradient(to bottom, rgba(5,13,26,0.95) 0%, rgba(5,13,26,0.6) 70%, transparent 100%)',
           }}
         >
           <div
@@ -335,7 +340,7 @@ export default function TechnologyExploded() {
                 position: 'absolute',
                 [c.side]: 'clamp(16px, 3vw, 48px)',
                 top: c.vPos,
-                zIndex: 10,
+                zIndex: 35,
                 pointerEvents: 'none',
                 opacity: op,
                 transform: tx,
@@ -427,7 +432,7 @@ export default function TechnologyExploded() {
             height: 140,
             background: 'rgba(126,214,255,0.08)',
             borderRadius: 2,
-            zIndex: 10,
+            zIndex: 35,
           }}
         >
           <div
@@ -469,7 +474,7 @@ export default function TechnologyExploded() {
             fontSize: '0.52rem',
             fontFamily: 'monospace',
             letterSpacing: '0.08em',
-            zIndex: 10,
+            zIndex: 35,
             whiteSpace: 'nowrap',
             marginTop: 100,
           }}
@@ -488,7 +493,7 @@ export default function TechnologyExploded() {
             gap: 8,
             flexWrap: 'wrap',
             justifyContent: 'center',
-            zIndex: 10,
+            zIndex: 35,
             opacity: progress > 0.05 ? 1 : 0,
             transition: 'opacity 0.6s ease',
           }}
@@ -525,7 +530,7 @@ export default function TechnologyExploded() {
             flexDirection: 'column',
             alignItems: 'center',
             gap: 6,
-            zIndex: 10,
+            zIndex: 35,
             pointerEvents: 'none',
             opacity: progress < 0.03 ? 1 : 0,
             transition: 'opacity 0.5s ease',

@@ -2,10 +2,6 @@
 
 import dynamic from 'next/dynamic';
 
-const WaterBackground = dynamic(() => import('@/components/WaterBackground'), {
-  ssr: false,
-});
-
 const LenisProvider = dynamic(() => import('@/components/LenisProvider'), {
   ssr: false,
 });
@@ -19,7 +15,6 @@ export default function ClientLayer() {
     <>
       <LenisProvider />
       <CursorRipple />
-      <WaterBackground />
     </>
   );
 }

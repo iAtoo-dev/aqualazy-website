@@ -127,11 +127,6 @@ export default function Hero() {
 
       {/* Main content */}
       <div className="relative z-10 max-w-5xl mx-auto">
-        {/* Eyebrow label */}
-        <div className="inline-flex items-center gap-2 glass-light rounded-full px-4 py-2 mb-8 text-xs font-semibold tracking-widest text-[#A5F1FF] uppercase">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#7ED6FF] animate-pulse" />
-          Technologie de piscine nouvelle génération
-        </div>
 
         {/* Hero Title */}
         <h1
@@ -149,6 +144,15 @@ export default function Hero() {
           <span className="block text-shimmer">L&apos;eau parfaite,</span>
           <span className="block text-white">sans effort.</span>
         </h1>
+
+        {/* Eyebrow label — between title and subtitle */}
+        <div
+          className="inline-flex items-center gap-2 glass-light rounded-full px-3 py-1.5 mt-5 mb-5 font-semibold tracking-widest text-[#A5F1FF] uppercase"
+          style={{ fontSize: 'clamp(0.48rem, 0.65vw, 0.62rem)' }}
+        >
+          <span className="inline-block w-1 h-1 rounded-full bg-[#7ED6FF] animate-pulse" />
+          Technologie de piscine nouvelle génération
+        </div>
 
         {/* Sub-headline */}
         <p
