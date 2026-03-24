@@ -364,6 +364,11 @@ body {
   100% { transform: translateY(100%); opacity: 0; }
 }
 
+/* ─── Spinner (loading overlay) ──────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ─── Noise Texture Overlay ──────────────────────────────────── */
 .noise-overlay::after {
   content: '';
