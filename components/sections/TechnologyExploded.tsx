@@ -146,19 +146,7 @@ export default function TechnologyExploded() {
     drawFrame(lastFrameRef.current < 0 ? 0 : lastFrameRef.current);
   }, [drawFrame]);
 
-  /* ── IntersectionObserver — show fixed viewer only while in section ── */
-  useEffect(() => {
-    const section = sectionRef.current;
-    if (!section) return;
-    const io = new IntersectionObserver(
-      ([entry]) => setInView(entry.isIntersecting),
-      { threshold: 0 }
-    );
-    io.observe(section);
-    return () => io.disconnect();
-  }, []);
-
-  /* ── Scroll handler — use getBoundingClientRect for Lenis compat ── */
+  /* ── Scroll handler — show fixed viewer only when inside section ─── */
   useEffect(() => {
     resize();
     window.addEventListener('resize', resize, { passive: true });
@@ -166,13 +154,19 @@ export default function TechnologyExploded() {
     function onScroll() {
       const section = sectionRef.current;
       if (!section) return;
-      // getBoundingClientRect().top is negative once section scrolls past viewport top
       const rect = section.getBoundingClientRect();
       const scrollableH = section.offsetHeight - window.innerHeight;
-      const scrolled = -rect.top; // px scrolled into section
-      const p = Math.max(0, Math.min(1, scrolled / scrollableH));
-      progressRef.current = p;
-      setProgress(p);
+
+      // Active only when section top has passed viewport top AND
+      // section bottom is still below viewport top (true sticky zone)
+      const active = rect.top <= 0 && rect.bottom > window.innerHeight * 0.1;
+      setInView(active);
+
+      if (active) {
+        const p = Math.max(0, Math.min(1, -rect.top / scrollableH));
+        progressRef.current = p;
+        setProgress(p);
+      }
     }
 
     window.addEventListener('scroll', onScroll, { passive: true });
