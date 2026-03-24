@@ -209,7 +209,12 @@ export default function TechnologyExploded() {
     <section
       id="technologie"
       ref={sectionRef}
-      style={{ position: 'relative', zIndex: 10, height: `${SCROLL_MULTIPLIER * 100}vh` }}
+      style={{
+        position: 'relative',
+        zIndex: 10,
+        height: `${SCROLL_MULTIPLIER * 100}vh`,
+        background: 'linear-gradient(180deg, #050D1A 0%, #0A2540 50%, #050D1A 100%)',
+      }}
     >
       {/* ── Fixed viewer — visible only while section is in viewport ── */}
       <div
@@ -223,8 +228,11 @@ export default function TechnologyExploded() {
           overflow: 'hidden',
           background: 'linear-gradient(180deg, #050D1A 0%, #0A2540 50%, #050D1A 100%)',
           opacity: inView ? 1 : 0,
+          visibility: inView ? 'visible' : 'hidden',
           pointerEvents: inView ? 'auto' : 'none',
-          transition: 'opacity 0.3s ease',
+          transition: inView
+            ? 'opacity 0.3s ease'
+            : 'opacity 0.3s ease, visibility 0s linear 0.3s',
         }}
       >
 
