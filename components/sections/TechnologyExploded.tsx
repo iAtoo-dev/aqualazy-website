@@ -72,18 +72,18 @@ function easeInOut(t: number) {
 }
 
 export default function TechnologyExploded() {
-  const sectionRef   = useRef<HTMLDivElement>(null);
-  const canvasRef    = useRef<HTMLCanvasElement>(null);
-  const imagesRef    = useRef<HTMLImageElement[]>([]);
-  const loadedRef    = useRef<boolean[]>(new Array(TOTAL).fill(false));
-  const progressRef  = useRef(0);
-  const rafRef       = useRef(0);
-  const lastFrameRef = useRef(-1);
-  const sectionTopRef = useRef(0);
+  const sectionRef    = useRef<HTMLDivElement>(null);
+  const canvasRef     = useRef<HTMLCanvasElement>(null);
+  const imagesRef     = useRef<HTMLImageElement[]>([]);
+  const loadedRef     = useRef<boolean[]>(new Array(TOTAL).fill(false));
+  const progressRef   = useRef(0);
+  const rafRef        = useRef(0);
+  const lastFrameRef  = useRef(-1);
 
   const [progress, setProgress]       = useState(0);
   const [loadCount, setLoadCount]     = useState(0);
   const [canvasReady, setCanvasReady] = useState(false);
+  const [inView, setInView]           = useState(false);
 
   /* ── Preload all frames ───────────────────────────────────── */
   useEffect(() => {
@@ -136,19 +136,29 @@ export default function TechnologyExploded() {
   /* ── Resize canvas ────────────────────────────────────────── */
   const resize = useCallback(() => {
     const canvas = canvasRef.current;
-    const section = sectionRef.current;
-    if (!canvas || !section) return;
+    if (!canvas) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width  = window.innerWidth  * dpr;
     canvas.height = window.innerHeight * dpr;
     canvas.style.width  = window.innerWidth  + 'px';
     canvas.style.height = window.innerHeight + 'px';
-    sectionTopRef.current = section.getBoundingClientRect().top + window.scrollY;
     setCanvasReady(true);
     drawFrame(lastFrameRef.current < 0 ? 0 : lastFrameRef.current);
   }, [drawFrame]);
 
-  /* ── Scroll handler ───────────────────────────────────────── */
+  /* ── IntersectionObserver — show fixed viewer only while in section ── */
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { threshold: 0 }
+    );
+    io.observe(section);
+    return () => io.disconnect();
+  }, []);
+
+  /* ── Scroll handler — use getBoundingClientRect for Lenis compat ── */
   useEffect(() => {
     resize();
     window.addEventListener('resize', resize, { passive: true });
@@ -156,9 +166,11 @@ export default function TechnologyExploded() {
     function onScroll() {
       const section = sectionRef.current;
       if (!section) return;
-      const scrollable = section.offsetHeight - window.innerHeight;
-      const scrolled = window.scrollY - sectionTopRef.current;
-      const p = Math.max(0, Math.min(1, scrolled / scrollable));
+      // getBoundingClientRect().top is negative once section scrolls past viewport top
+      const rect = section.getBoundingClientRect();
+      const scrollableH = section.offsetHeight - window.innerHeight;
+      const scrolled = -rect.top; // px scrolled into section
+      const p = Math.max(0, Math.min(1, scrolled / scrollableH));
       progressRef.current = p;
       setProgress(p);
     }
@@ -180,17 +192,6 @@ export default function TechnologyExploded() {
       cancelAnimationFrame(rafRef.current);
     };
   }, [resize, drawFrame]);
-
-  /* ── Re-cache section top on layout shift ─────────────────── */
-  useEffect(() => {
-    const ro = new ResizeObserver(() => {
-      const section = sectionRef.current;
-      if (section)
-        sectionTopRef.current = section.getBoundingClientRect().top + window.scrollY;
-    });
-    if (sectionRef.current) ro.observe(document.body);
-    return () => ro.disconnect();
-  }, []);
 
   const loadFraction = loadCount / TOTAL;
   const currentFrame = Math.round(progress * (TOTAL - 1)) + 1;
@@ -214,26 +215,32 @@ export default function TechnologyExploded() {
     <section
       id="technologie"
       ref={sectionRef}
-      style={{ position: 'relative', height: `${SCROLL_MULTIPLIER * 100}vh` }}
+      style={{ position: 'relative', zIndex: 10, height: `${SCROLL_MULTIPLIER * 100}vh` }}
     >
-      {/* ── Sticky viewport ─────────────────────────────────── */}
+      {/* ── Fixed viewer — visible only while section is in viewport ── */}
       <div
         style={{
-          position: 'sticky',
+          position: 'fixed',
           top: 0,
+          left: 0,
+          right: 0,
           height: '100vh',
+          zIndex: 10,
           overflow: 'hidden',
           background: 'linear-gradient(180deg, #050D1A 0%, #0A2540 50%, #050D1A 100%)',
+          opacity: inView ? 1 : 0,
+          pointerEvents: inView ? 'auto' : 'none',
+          transition: 'opacity 0.3s ease',
         }}
       >
 
-        {/* ── Canvas — mix-blend-mode:screen makes black → transparent ── */}
+        {/* ── Canvas — z:0 so overlays (z:10) paint above it ──── */}
         <canvas
           ref={canvasRef}
           style={{
             position: 'absolute',
             inset: 0,
-            mixBlendMode: 'screen',
+            zIndex: 0,
             opacity: canvasReady ? 1 : 0,
             transition: 'opacity 0.6s ease',
           }}
@@ -254,12 +261,15 @@ export default function TechnologyExploded() {
         <div
           style={{
             position: 'absolute',
-            top: 48,
+            top: 0,
             left: 0,
             right: 0,
+            paddingTop: 52,
+            paddingBottom: 28,
             textAlign: 'center',
             pointerEvents: 'none',
             zIndex: 10,
+            background: 'linear-gradient(to bottom, rgba(5,13,26,0.85) 0%, rgba(5,13,26,0.5) 70%, transparent 100%)',
           }}
         >
           <div
@@ -280,6 +290,7 @@ export default function TechnologyExploded() {
                 letterSpacing: '0.22em',
                 textTransform: 'uppercase',
                 fontFamily: 'Inter, sans-serif',
+                textShadow: '0 1px 8px rgba(0,0,0,0.8)',
               }}
             >
               Vue Éclatée · Technologie
@@ -295,6 +306,7 @@ export default function TechnologyExploded() {
               lineHeight: 1.15,
               color: 'white',
               margin: 0,
+              textShadow: '0 2px 16px rgba(0,0,0,0.7)',
             }}
           >
             Anatomie d&apos;une{' '}
@@ -351,12 +363,22 @@ export default function TechnologyExploded() {
                   <div style={{ width: 1, height: 32, background: 'linear-gradient(to bottom, #7ED6FF, transparent)', marginTop: 4 }} />
                 </div>
 
-                <div style={{ textAlign: c.side === 'left' ? 'left' : 'right' }}>
+                <div
+                  style={{
+                    textAlign: c.side === 'left' ? 'left' : 'right',
+                    background: 'rgba(5,13,26,0.55)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(126,214,255,0.15)',
+                    borderRadius: 12,
+                    padding: '10px 14px',
+                  }}
+                >
                   <div
                     style={{
                       fontFamily: 'Satoshi, DM Sans, sans-serif',
                       fontWeight: 700,
-                      fontSize: 'clamp(0.75rem, 1.1vw, 0.9rem)',
+                      fontSize: 'clamp(0.75rem, 1.1vw, 0.88rem)',
                       color: 'white',
                       letterSpacing: '-0.01em',
                       marginBottom: 3,
@@ -367,7 +389,7 @@ export default function TechnologyExploded() {
                   <div
                     style={{
                       fontFamily: 'Inter, sans-serif',
-                      fontSize: 'clamp(0.6rem, 0.8vw, 0.72rem)',
+                      fontSize: 'clamp(0.6rem, 0.8vw, 0.7rem)',
                       color: '#A5F1FF',
                       lineHeight: 1.5,
                       marginBottom: 2,
@@ -379,8 +401,8 @@ export default function TechnologyExploded() {
                   <div
                     style={{
                       fontFamily: 'Inter, sans-serif',
-                      fontSize: 'clamp(0.55rem, 0.7vw, 0.65rem)',
-                      color: 'rgba(165,241,255,0.5)',
+                      fontSize: 'clamp(0.55rem, 0.7vw, 0.63rem)',
+                      color: 'rgba(165,241,255,0.55)',
                       lineHeight: 1.45,
                     }}
                   >
